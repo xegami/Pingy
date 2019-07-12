@@ -8,6 +8,7 @@
         tools:context=".MainActivity">
 
     <TextView
+            android:id="@+id/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/app_name"
@@ -17,17 +18,17 @@
             android:layout_marginTop="50dp"
             android:textSize="40sp"/>
 
-    <Button
-            android:id="@+id/pingCheckButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
+    <Spinner
+            android:id="@+id/selectServerSpinner"
+            android:layout_width="match_parent"
+            app:layout_constraintTop_toBottomOf="@id/title"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginBottom="50dp"
-            android:text="GO"
-            android:textSize="18sp"
-
-    />
+            app:layout_constraintBottom_toTopOf="@id/pingScreen"
+            android:layout_marginLeft="48dp"
+            android:layout_marginRight="48dp"
+            android:textAlignment="center"
+            android:layout_height="48dp"/>
 
     <TextView
             android:id="@+id/pingScreen"
@@ -40,6 +41,17 @@
             android:gravity="center"
             android:textSize="56sp"
             android:text="0.0"
+            app:layout_constraintHorizontal_bias="0.494" app:layout_constraintVertical_bias="0.644"/>
+
+    <Button
+            android:id="@+id/pingCheckButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginBottom="50dp"
+            android:text="GO"
+            android:textSize="18sp"
     />
 
 </android.support.constraint.ConstraintLayout>
