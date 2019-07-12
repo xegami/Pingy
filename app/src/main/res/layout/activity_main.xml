@@ -8,38 +8,38 @@
         tools:context=".MainActivity">
 
     <TextView
+            android:id="@+id/ipAddress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginTop="50dp"
+            android:text="0.0.0.0"
             android:textSize="40sp"/>
 
     <Button
             android:id="@+id/pingCheckButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             android:layout_marginBottom="50dp"
             android:text="GO"
-            android:textSize="18sp"
-
-    />
+            android:textSize="18sp"/>
 
     <TextView
             android:id="@+id/pingScreen"
-            android:layout_width="320dp" android:layout_height="320dp"
+            android:layout_width="320dp"
+            android:layout_height="320dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:background="@android:color/holo_blue_light"
             android:gravity="center"
-            android:textSize="56sp"
             android:text="0.0"
-    />
+            android:textSize="56sp"
+            android:background="@android:color/holo_blue_light"/>
 
 </android.support.constraint.ConstraintLayout>
