@@ -3,4 +3,9 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
+    <color name="signalDefault">#03A9F4</color>
+    <color name="signalGood">#4CAF50</color>
+    <color name="signalMedium">#C8C83B</color>
+    <color name="signalBad">#FF9800</color>
+    <color name="signalLost">#E91E63</color>
 </resources>

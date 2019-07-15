@@ -1,21 +1,30 @@
 package com.xegami.pingy
 
-import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.annotation.UiThread
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.text.Editable
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.Toast
+
 import kotlinx.android.synthetic.main.activity_main.*
+
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.lang.ref.WeakReference
 import java.util.stream.Collectors
 
 
@@ -24,23 +33,94 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     // google by default
     private var selectedServer: String = "8.8.8.8"
     private val serverList = arrayOf("Google 8.8.8.8", "LoL-EUW 104.160.142.3", "Facebook 69.63.176.13")
+    private val editable = Editable.Factory.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        pingCheckButton.setOnClickListener { printConnection() }
+        initContent()
+    }
 
-        selectServerSpinner!!.onItemSelectedListener = this
-        val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, serverList)
+    private fun initContent() {
+//        This seems to be a bug in the Design Support Library v28.0.0.
+//        floatingActionButton.scaleType = ImageView.ScaleType.CENTER
+
+        selectServerSpinner.onItemSelectedListener = this
+        val arrayAdapter = ArrayAdapter(this, R.layout.spinner_list_item, serverList)
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        selectServerSpinner!!.adapter = arrayAdapter
+        selectServerSpinner.adapter = arrayAdapter
 
+        ipAddr1.setOnEditorActionListener { _, id, _ ->
+            if (id == EditorInfo.IME_ACTION_NEXT) {
+                if (ipAddr1.text.toString().toInt() > 255) {
+                    toast("No puede superar 255").show()
+                    ipAddr1.text = editable.newEditable("255")
+                } else {
+                    ipAddr2.requestFocus()
+                }
+            }
+            true
+        }
+        ipAddr2.setOnEditorActionListener { _, id, _ ->
+            if (id == EditorInfo.IME_ACTION_NEXT) {
+                if (ipAddr2.text.toString().toInt() > 255) {
+                    toast("No puede superar 255").show()
+                    ipAddr2.text = editable.newEditable("255")
+                } else {
+                    ipAddr3.requestFocus()
+                }
+            }
+            true
+        }
+        ipAddr3.setOnEditorActionListener { _, id, _ ->
+            if (id == EditorInfo.IME_ACTION_NEXT) {
+                if (ipAddr3.text.toString().toInt() > 255) {
+                    toast("No puede superar 255").show()
+                    ipAddr3.text = editable.newEditable("255")
+                } else {
+                    ipAddr4.requestFocus()
+                }
+            }
+            true
+        }
+        ipAddr4.setOnEditorActionListener { _, id, _ ->
+            if (id == EditorInfo.IME_ACTION_DONE) {
+                if (ipAddr4.text.toString().toInt() > 255) {
+                    toast("No puede superar 255").show()
+                    ipAddr4.text = editable.newEditable("255")
+                } else {
+                    val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    val contentView: View = findViewById(android.R.id.content)
+                    imm.hideSoftInputFromWindow(contentView.windowToken, 0)
+                    ipAddr4.clearFocus()
+                    selectedServer = "${ipAddr1.text}.${ipAddr2.text}.${ipAddr3.text}.${ipAddr4.text}"
+                    printConnection()
+                }
+            }
+            true
+        }
+
+        val shape = GradientDrawable()
+        shape.shape = GradientDrawable.OVAL
+        shape.setColor(ContextCompat.getColor(this, R.color.signalDefault))
+        pingScreen.background = shape
+
+        pingCheckButton.setOnClickListener { printConnection() }
     }
 
     private fun printConnection() {
+        if (ipAddr1.text.toString().toInt() > 255 ||
+            ipAddr2.text.toString().toInt() > 255 ||
+            ipAddr3.text.toString().toInt() > 255 ||
+            ipAddr4.text.toString().toInt() > 255
+        ) {
+            toast("Segmentos IP no pueden superar 255").show()
+            return
+        }
+
         if (isOnline()) {
-            if (ATHandler().execute(selectedServer).get() == "fail") {
+            if (ATHandler(this).execute(selectedServer).get() == "fail") {
                 toast("packet loss").show()
             } else {
                 toast("success").show()
@@ -50,25 +130,26 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
-    private inner class ATHandler : AsyncTask<String, String, String>() {
+    private class ATHandler internal constructor(context: MainActivity) : AsyncTask<String, String, String>() {
+        private val activity: WeakReference<MainActivity> = WeakReference(context)
+
         override fun onPreExecute() {
-            pingCheckButtonEnabled(false)
+            activity.get()!!.pingCheckButtonEnabled(false)
         }
 
         override fun doInBackground(vararg params: String?): String {
             val runtime = Runtime.getRuntime()
-            val process = runtime.exec("/system/bin/ping -c 4 ${params[0]}")
-            val output = inputStreamToString(process.inputStream)
+            val process = runtime.exec("/system/bin/ping -c 1 ${params[0]}")
+            val output = activity.get()!!.inputStreamToString(process.inputStream)
 
-            return when (printPings(output)) {
+            return when (activity.get()!!.printPings(output)) {
                 true -> "success"
                 false -> "fail"
             }
         }
 
         override fun onPostExecute(result: String?) {
-            pingCheckButtonEnabled(true)
+            activity.get()!!.pingCheckButtonEnabled(true)
         }
     }
 
@@ -76,7 +157,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private fun inputStreamToString(inputStream: InputStream): String {
         return BufferedReader(InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"))
     }
-
 
     private fun printPings(output: String): Boolean {
         var pings = 0.0
@@ -100,10 +180,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     @UiThread
     private fun pingCheckButtonEnabled(state: Boolean) {
         if (state) {
-            pingCheckButton.text = "GO"
+            pingCheckButton.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.signalGood))
             pingCheckButton.isClickable = true
         } else {
-            pingCheckButton.text = "CHECKING..."
+            pingCheckButton.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.signalLost))
             pingCheckButton.isClickable = false
         }
     }
@@ -114,6 +194,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
         selectedServer = serverList[position].split(" ")[1]
+        val arAddr = selectedServer.split(".")
+        ipAddr1.text = editable.newEditable(arAddr[0])
+        ipAddr2.text = editable.newEditable(arAddr[1])
+        ipAddr3.text = editable.newEditable(arAddr[2])
+        ipAddr4.text = editable.newEditable(arAddr[3])
     }
 
     private fun isOnline(): Boolean {
@@ -128,12 +213,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         return isAvailable
     }
 
-    private fun toast(type: String) : Toast {
+    private fun toast(type: String): Toast {
         val message = when (type) {
             "no internet" -> "NO INTERNET CONNECTION"
             "packet loss" -> "100% PACKET LOSS"
             "success" -> "PING SUCCESSFULL"
-            else -> "MIS MUERTOS"
+            else -> type
         }
 
         return Toast.makeText(this, message, Toast.LENGTH_LONG)

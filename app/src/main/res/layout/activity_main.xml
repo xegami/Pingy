@@ -7,50 +7,142 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity">
 
-    <TextView
-            android:id="@+id/title"
+    <android.support.constraint.ConstraintLayout
+            android:id="@+id/addressList"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginTop="50dp"
-            android:text="0.0.0.0"
-            android:textSize="40sp"/>
-
-    <Spinner
-            android:id="@+id/selectServerSpinner"
-            android:layout_width="match_parent"
-            app:layout_constraintTop_toBottomOf="@id/title"
+            app:layout_constraintBottom_toTopOf="@id/ipAddress"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="50dp"
+            android:orientation="vertical">
+
+        <Spinner
+                android:id="@+id/selectServerSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/addNewAddress"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                android:textAlignment="center"/>
+
+        <android.support.design.widget.FloatingActionButton
+                android:id="@+id/addNewAddress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/selectServerSpinner"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                android:src="@android:drawable/ic_input_add"
+                android:backgroundTint="@android:color/transparent"
+                app:borderWidth="0dp"/>
+
+    </android.support.constraint.ConstraintLayout>
+
+    <LinearLayout
+            android:id="@+id/ipAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/addressList"
             app:layout_constraintBottom_toTopOf="@id/pingScreen"
-            android:layout_marginLeft="48dp"
-            android:layout_marginRight="48dp"
-            android:textAlignment="center"
-            android:layout_height="48dp"/>
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_margin="0dp"
+            android:gravity="center">
+
+        <EditText
+                android:id="@+id/ipAddr1"
+                android:labelFor="@id/pingScreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLength="3"
+                android:hint="255"
+                android:textSize="40sp"
+                android:imeOptions="actionNext"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="."
+                android:textSize="60sp"/>
+
+        <EditText
+                android:id="@+id/ipAddr2"
+                android:labelFor="@id/pingScreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLength="3"
+                android:hint="255"
+                android:textSize="40sp"
+                android:imeOptions="actionNext"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="."
+                android:textSize="60sp"/>
+
+        <EditText
+                android:id="@+id/ipAddr3"
+                android:labelFor="@id/pingScreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLength="3"
+                android:hint="255"
+                android:textSize="40sp"
+                android:imeOptions="actionNext"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="."
+                android:textSize="60sp"/>
+
+        <EditText
+                android:id="@+id/ipAddr4"
+                android:labelFor="@id/pingScreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLength="3"
+                android:hint="255"
+                android:textSize="40sp"
+                android:imeOptions="actionDone"/>
+
+    </LinearLayout>
 
     <TextView
             android:id="@+id/pingScreen"
             android:layout_width="320dp"
             android:layout_height="320dp"
+            app:layout_constraintHorizontal_bias="0.494"
+            app:layout_constraintVertical_bias="0.644"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             android:gravity="center"
             android:text="0.0"
-            app:layout_constraintHorizontal_bias="0.494" app:layout_constraintVertical_bias="0.644"/>
+            android:textSize="50sp"
+            android:background="@color/signalDefault"/>
 
-    <Button
+    <android.support.design.widget.FloatingActionButton
             android:id="@+id/pingCheckButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             android:layout_marginBottom="50dp"
-            android:text="GO"
-            android:textSize="18sp"
-    />
+            android:src="@android:drawable/ic_menu_send"
+            android:backgroundTint="@color/signalGood"
+            app:borderWidth="0dp"/>
 
 </android.support.constraint.ConstraintLayout>
