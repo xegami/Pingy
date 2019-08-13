@@ -1,13 +1,22 @@
 package com.xegami.pingy
 
 import android.annotation.TargetApi
+import android.app.Notification.EXTRA_NOTIFICATION_ID
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.os.AsyncTask
+import android.os.Build
 import android.os.Bundle
 import android.support.annotation.UiThread
+import android.support.v4.app.NotificationCompat
+import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.text.Editable
@@ -16,7 +25,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.ImageView
 import android.widget.Toast
 
 import kotlinx.android.synthetic.main.activity_main.*
@@ -34,6 +42,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var selectedServer: String = "8.8.8.8"
     private val serverList = arrayOf("Google 8.8.8.8", "LoL-EUW 104.160.142.3", "Facebook 69.63.176.13")
     private val editable = Editable.Factory.getInstance()
+
+    object Constants {
+        const val CHANNEL_ID = "com.xegami.pingy"
+        const val NOTIFICATION_ID = 13
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,7 +92,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     toast("No puede superar 255").show()
                     ipAddr3.text = editable.newEditable("255")
                 } else {
-                    ipAddr4.requestFocus()
+
                 }
             }
             true
@@ -89,14 +102,15 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 if (ipAddr4.text.toString().toInt() > 255) {
                     toast("No puede superar 255").show()
                     ipAddr4.text = editable.newEditable("255")
-                } else {
-                    val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                    val contentView: View = findViewById(android.R.id.content)
-                    imm.hideSoftInputFromWindow(contentView.windowToken, 0)
-                    ipAddr4.clearFocus()
-                    selectedServer = "${ipAddr1.text}.${ipAddr2.text}.${ipAddr3.text}.${ipAddr4.text}"
-                    printConnection()
+                    return@setOnEditorActionListener false
                 }
+
+                val imm = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                val contentView: View = findViewById(android.R.id.content)
+                imm.hideSoftInputFromWindow(contentView.windowToken, 0)
+                ipAddr4.clearFocus()
+                selectedServer = "${ipAddr1.text}.${ipAddr2.text}.${ipAddr3.text}.${ipAddr4.text}"
+                printConnection()
             }
             true
         }
@@ -106,19 +120,127 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         shape.setColor(ContextCompat.getColor(this, R.color.signalDefault))
         pingScreen.background = shape
 
-        pingCheckButton.setOnClickListener { printConnection() }
+        pingCheckButton.setOnClickListener {
+            if (checkAddress()) printConnection()
+            else toast("No puede superar 255").show()
+        }
+
+        createNotificationChannel()
+    }
+
+    private fun checkAddress(): Boolean {
+        return (ipAddr1.text.toString().toInt() > 255 ||
+                ipAddr2.text.toString().toInt() > 255 ||
+                ipAddr3.text.toString().toInt() > 255 ||
+                ipAddr4.text.toString().toInt() > 255)
+    }
+
+    private fun createNotificationChannel() {
+        // NotificationChannel only on API 26+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.channel_name)
+            val descriptionText = getString(R.string.channel_description)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(Constants.CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        setNotifyActions()
+    }
+
+    private fun setNotifyActions() {
+        // Launch app on MainActivity
+        val launchIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val launchPending = PendingIntent.getActivity(this, 0, launchIntent, 0)
+
+
+        // Start routine to ping current server
+        val startIntent = Intent(this, NotificationReceiver::class.java).apply {
+            action = getString(R.string.start)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                putExtra(EXTRA_NOTIFICATION_ID, 0)
+        }
+        val startPending = PendingIntent.getBroadcast(this, 0, startIntent, 0)
+
+
+        // Stop routine to ping current server
+        val stopIntent = Intent(this, NotificationReceiver::class.java).apply {
+            action = getString(R.string.stop)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                putExtra(EXTRA_NOTIFICATION_ID, 0)
+        }
+        val stopPending = PendingIntent.getBroadcast(this, 0, stopIntent, 0)
+
+
+        // Exit application stopping everything
+        val exitIntent = Intent(this, NotificationReceiver::class.java).apply {
+            action = getString(R.string.exit)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                putExtra(EXTRA_NOTIFICATION_ID, 0)
+        }
+        val exitPending = PendingIntent.getBroadcast(this, 0, exitIntent, 0)
+
+        val actions = arrayListOf<PendingIntent>(launchPending, startPending, stopPending, exitPending)
+
+        NotificationReceiver.Receiver.reference = WeakReference(this)
+
+        createNotification(actions)
+    }
+
+    private fun createNotification(actions: ArrayList<PendingIntent>) {
+        val ping = pingScreen.text
+        val server = selectServerSpinner.selectedItem as String
+
+        val builder = NotificationCompat.Builder(this, Constants.CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("$ping for $server")
+            .setContentText("Tap on the notification to open the application")
+            .setPriority(NotificationCompat.FLAG_NO_CLEAR)
+            .setContentIntent(actions[0])
+            .addAction(R.mipmap.ic_launcher, getString(R.string.start), actions[1])
+            .addAction(R.mipmap.ic_launcher, getString(R.string.stop), actions[2])
+            .addAction(R.mipmap.ic_launcher, getString(R.string.exit), actions[3])
+            .setAutoCancel(false)
+            .setOngoing(true)
+
+        showNotification(builder)
+    }
+
+    private fun showNotification(builder: NotificationCompat.Builder) {
+        with(NotificationManagerCompat.from(this)) {
+            notify(Constants.NOTIFICATION_ID, builder.build())
+        }
+    }
+
+    class NotificationReceiver : BroadcastReceiver() {
+        object Receiver {
+            lateinit var reference: WeakReference<MainActivity>
+        }
+
+        override fun onReceive(context: Context, intent: Intent) {
+            val activity = Receiver.reference.get() ?: return
+
+            when (intent.action) {
+                context.getString(R.string.start) -> {
+                    activity.printConnection()
+                }
+                context.getString(R.string.stop) -> {
+                    activity.toast("Stop service").show()
+                }
+                context.getString(R.string.exit) -> {
+                    activity.toast("Exit application").show()
+                }
+                else -> activity.toast("Acción desconocida...").show()
+            }
+        }
     }
 
     private fun printConnection() {
-        if (ipAddr1.text.toString().toInt() > 255 ||
-            ipAddr2.text.toString().toInt() > 255 ||
-            ipAddr3.text.toString().toInt() > 255 ||
-            ipAddr4.text.toString().toInt() > 255
-        ) {
-            toast("Segmentos IP no pueden superar 255").show()
-            return
-        }
-
         if (isOnline()) {
             if (ATHandler(this).execute(selectedServer).get() == "fail") {
                 toast("packet loss").show()
@@ -180,10 +302,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     @UiThread
     private fun pingCheckButtonEnabled(state: Boolean) {
         if (state) {
-            pingCheckButton.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.signalGood))
+            pingCheckButton.backgroundTintList =
+                ColorStateList.valueOf(ContextCompat.getColor(this, R.color.signalGood))
             pingCheckButton.isClickable = true
         } else {
-            pingCheckButton.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.signalLost))
+            pingCheckButton.backgroundTintList =
+                ColorStateList.valueOf(ContextCompat.getColor(this, R.color.signalLost))
             pingCheckButton.isClickable = false
         }
     }
@@ -217,11 +341,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         val message = when (type) {
             "no internet" -> "NO INTERNET CONNECTION"
             "packet loss" -> "100% PACKET LOSS"
-            "success" -> "PING SUCCESSFULL"
+            "success" -> "PING SUCCESSFUL"
             else -> type
         }
 
         return Toast.makeText(this, message, Toast.LENGTH_LONG)
     }
-
 }

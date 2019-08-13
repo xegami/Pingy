@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Pingy</string>
+    <string name="channel_name">Pingy Channel</string>
+    <string name="channel_description">Channel to handle notifications</string>
+    <string name="stop">Stop</string>
+    <string name="start">Start</string>
+    <string name="exit">Exit</string>
 </resources>
